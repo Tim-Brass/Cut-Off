@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrier Cut-off Times</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            overflow: hidden;
+        }
+        .header {
+            background: #4D148C;
+            color: white;
+            padding: 20px;
+            font-size: 80px;  /* Titel naar 80px */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            width: 100%;
+            position: relative;
+            box-sizing: border-box;
+            height: 100px; /* Achtergrond naar 100px */
+        }
+        .clock {
+            font-size: 50px;
+            font-weight: bold;
+            color: white;
+            position: absolute;
+            right: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 98%;
+            max-width: 1600px;
+            margin-top: 10px;
+            height: auto;
+            justify-content: center;
+            align-items: start;
+        }
+        @media (max-width: 1200px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+        .card {
+            background: white;
+            border: 2px solid #4D148C;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 450px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .card.red-border {
+            border: 4px solid red;
+        }
+        .card h2 {
+            font-size: 45px;
+            background: #4D148C;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            margin: 0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
+        .card h2.red-background {
+            background: red !important;
+        }
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            padding-top: 120px;
+            padding-bottom: 60px;
+        }
+        .time-remaining, .cutoff-time {
+            font-size: 80px; /* Verhoogd naar 80px */
+            font-weight: bold;
+        }
+        .time-remaining {
+            margin-bottom: 20px; /* Vergroot de ruimte onder Time Remaining */
+        }
+        .cutoff-time {
+            margin-top: 20px; /* Vergroot de ruimte boven Cut-Off Time */
+        }
+        .label {
+            font-size: 30px;
+            font-weight: bold;
+        }
+        .separator {
+            border-top: 1px solid #4D148C;
+            margin: 10px 0;
+            width: 100%;
+        }
+        .red {
+            color: red;
+        }
+        .green {
+            color: green;
+        }
+        .purple {
+            color: #4D148C;
+        }
+        .gray {
+            color: gray;
+        }
+        .expired {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Carrier Cut-off Times
+        <span class="clock">Time: <span id="current-time"></span></span>
+    </div>
+    <div class="container">
+        <div class="grid" id="carriers"></div>
+    </div>
+
+    <script>
+        const carriers = [
+            { name: "Speedlink", cutoff: "15:30" },
+            { name: "DHL", cutoff: "17:30" },
+            { name: "FedEx", cutoff: "18:30" },
+            { name: "TNT Express", cutoff: "18:30" },
+            { name: "TNT Standard", cutoff: "18:30" },
+            { name: "TNT Domestic", cutoff: "18:30" }
+        ];
+
+        function updateTimers() {
+            const now = new Date();
+            const currentTime = now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('current-time').textContent = currentTime;
+
+            const container = document.getElementById('carriers');
+            container.innerHTML = '';
+
+            carriers.forEach(carrier => {
+                const cutoffTimeParts = carrier.cutoff.split(":");
+                const cutoffDate = new Date();
+                cutoffDate.setHours(cutoffTimeParts[0], cutoffTimeParts[1], 0, 0);
+                
+                let remainingTime = (cutoffDate - now) / 1000;
+                let hours = Math.floor(remainingTime / 3600);
+                let minutes = Math.floor((remainingTime % 3600) / 60);
+                let expired = remainingTime <= 0;
+                
+                let timeClass = expired ? 'gray' : (hours < 1 ? 'red' : 'green');
+                let timeRemainingText = expired ? '' : `${hours > 0 ? hours + 'h ' : ''}${minutes}m`;
+
+                const card = document.createElement('div');
+                card.className = `card ${expired ? 'expired' : ''} ${hours < 1 && !expired ? 'red-border' : ''}`;
+                card.innerHTML = `
+                    <h2 class="${hours < 1 && !expired ? 'red-background' : ''}">${carrier.name}</h2>
+                    <div class="card-content">
+                        <div class="time-remaining ${timeClass}">${timeRemainingText}</div>
+                        <div class="label ${timeClass}">${expired ? '' : 'Time Remaining'}</div>
+                        <div class="separator"></div>
+                        <div class="cutoff-time purple">${carrier.cutoff}</div>
+                        <div class="label purple">Cut-off Time</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        setInterval(updateTimers, 1000);
+        updateTimers();
+    </script>
+</body>
+</html>
